@@ -82,3 +82,34 @@ def pbkdf2(password, salt, iterations, dklen=0, digest=None):
     password = force_bytes(password)
     salt = force_bytes(salt)
     return hashlib.pbkdf2_hmac(digest().name, password, salt, iterations, dklen)
+
+
+try:
+    hashlib.md5(usedforsecurity=False)  # nosec
+except TypeError:
+    def md5(data=b'', usedforsecurity=True):
+        """Return an md5 hashlib object without usedforsecurity parameter
+        For python distributions that do not yet support this keyword
+        parameter, we drop the parameter
+        """
+        return hashlib.md5(data)  # nosec
+
+    def new_hash(hash_algorithm, usedforsecurity=True):
+        """Return a new hashlib object without the usedforsecurity parameter
+        For python distributions that do not yet support this keyword
+        parameter, we drop the parameter
+        """
+        return hashlib.new(hash_algorithm)  # nosec
+else:
+    # For python distributions that support the usedforsecurity parameter
+    # use hashlib.md5 as-is
+    md5 = hashlib.md5
+
+    def new_hash(hash_algorithm, usedforsecurity=True):
+        """Return a new hashlib object using usedforsecurity parameter
+        For python distributions that support the usedforsecurity keyword
+        parameter, this passes the parameter through as expected.
+        See https://bugs.python.org/issue9216
+        """
+        return hashlib.new(hash_algorithm, usedforsecurity=usedforsecurity)  # nosec
+

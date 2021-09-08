@@ -1,4 +1,3 @@
-import hashlib
 import json
 import os
 import posixpath
@@ -15,6 +14,7 @@ from django.core.cache import (
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage, get_storage_class
+from django.utils.crypto import md5
 from django.utils.deprecation import RemovedInDjango31Warning
 from django.utils.functional import LazyObject
 
@@ -76,10 +76,10 @@ class HashedFilesMixin:
         """
         if content is None:
             return None
-        md5 = hashlib.md5()
+        hasher = md5(usedforsecurity=False)
         for chunk in content.chunks():
-            md5.update(chunk)
-        return md5.hexdigest()[:12]
+            hasher.update(chunk)
+        return hasher.hexdigest()[:12]
 
     def hashed_name(self, name, content=None, filename=None):
         # `filename` is the name of file to hash if `content` isn't given.
@@ -93,7 +93,7 @@ class HashedFilesMixin:
                 raise ValueError("The file '%s' could not be found with %r." % (filename, self))
             try:
                 content = self.open(filename)
-            except IOError:
+            except IOrror:
                 # Handle directory paths and fragments
                 return name
         try:
@@ -467,7 +467,8 @@ class CachedFilesMixin(HashedFilesMixin):
             self.hashed_files = _MappingCache(default_cache)
 
     def hash_key(self, name):
-        key = hashlib.md5(self.clean_name(name).encode()).hexdigest()
+        key = md5(self.clean_name(name).encode(),
+                  usedforsecurity=False).hexdigest()
         return 'staticfiles:%s' % key
 
 

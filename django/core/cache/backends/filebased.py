@@ -1,6 +1,5 @@
 "File-based cache backend"
 import glob
-import hashlib
 import os
 import pickle
 import random
@@ -11,6 +10,7 @@ import zlib
 from django.core.cache.backends.base import DEFAULT_TIMEOUT, BaseCache
 from django.core.files import locks
 from django.core.files.move import file_move_safe
+from django.utils.crypto import md5
 
 
 class FileBasedCache(BaseCache):
@@ -126,8 +126,10 @@ class FileBasedCache(BaseCache):
         """
         key = self.make_key(key, version=version)
         self.validate_key(key)
-        return os.path.join(self._dir, ''.join(
-            [hashlib.md5(key.encode()).hexdigest(), self.cache_suffix]))
+        return os.path.join(
+            self._dir, ''.join(
+                [md5(key.encode(), usedforsecurity=False).hexdigest(),
+                    self.cache_suffix]))
 
     def clear(self):
         """
@@ -135,7 +137,6 @@ class FileBasedCache(BaseCache):
         """
         if not os.path.exists(self._dir):
             return
-        for fname in self._list_cache_files():
             self._delete(fname)
 
     def _is_expired(self, f):

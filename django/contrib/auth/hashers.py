@@ -11,7 +11,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core.signals import setting_changed
 from django.dispatch import receiver
 from django.utils.crypto import (
-    constant_time_compare, get_random_string, pbkdf2,
+    constant_time_compare, get_random_string, pbkdf2, md5
 )
 from django.utils.module_loading import import_string
 from django.utils.translation import gettext_noop as _
@@ -505,7 +505,8 @@ class MD5PasswordHasher(BasePasswordHasher):
     def encode(self, password, salt):
         assert password is not None
         assert salt and '$' not in salt
-        hash = hashlib.md5((salt + password).encode()).hexdigest()
+        hash = md5((salt + password).encode(),
+                   usedforsecurity=True).hexdigest()
         return "%s$%s$%s" % (self.algorithm, salt, hash)
 
     def verify(self, password, encoded):
@@ -580,7 +581,8 @@ class UnsaltedMD5PasswordHasher(BasePasswordHasher):
 
     def encode(self, password, salt):
         assert salt == ''
-        return hashlib.md5(password.encode()).hexdigest()
+        return md5(password.encode(),
+                   usedforsecurity=True).hexdigest()
 
     def verify(self, password, encoded):
         if len(encoded) == 37 and encoded.startswith('md5$$'):
